@@ -19,7 +19,6 @@ class MovieSpider(scrapy.Spider):
         "AUTOTHROTTLE_START_DELAY": 1.0,
         "AUTOTHROTTLE_MAX_DELAY": 10.0,
 
-        # фиксируем порядок и набор колонок в CSV (url не попадёт вообще)
         "FEED_EXPORT_FIELDS": ["title", "genre", "director", "country", "year", "imdb_id"],
     }
 
@@ -55,7 +54,6 @@ class MovieSpider(scrapy.Spider):
         if next_page:
             yield response.follow(next_page, callback=self.parse_category)
 
-    # ---------------- main movie parsing ----------------
 
     def parse_movie(self, response):
         item = MovieItem()
@@ -87,7 +85,6 @@ class MovieSpider(scrapy.Spider):
             year_raw = get_infobox_value(["Год", "Годы", "Дата выхода", "Премьера"])
             item["year"] = self.extract_year(year_raw)
 
-        # IMDb ID — как в ImdbRatingSpider: сначала HTML, если нет — action=raw
         imdb_id = self.extract_imdb_id_from_wiki_html(response)
         if imdb_id:
             item["imdb_id"] = imdb_id
@@ -102,7 +99,6 @@ class MovieSpider(scrapy.Spider):
         item["imdb_id"] = self.extract_imdb_id_from_text(response.text or "")
         yield item
 
-    # ---------------- helpers ----------------
 
     def td_text(self, td) -> str | None:
         parts = td.xpath('.//text()[not(ancestor::style) and not(ancestor::script)]').getall()
@@ -128,9 +124,7 @@ class MovieSpider(scrapy.Spider):
     def clean_text(text):
         if not text:
             return None
-        # remove footnote refs like [1], [2], ...
         text = re.sub(r"\[\d+\]", "", text)
-        # normalize spaces
         text = re.sub(r"\s+", " ", text).strip()
         return text or None
 
