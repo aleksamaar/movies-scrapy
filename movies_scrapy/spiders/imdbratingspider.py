@@ -14,18 +14,15 @@ class ImdbRatingSpider(scrapy.Spider):
     custom_settings = {
         "ROBOTSTXT_OBEY": False,
 
-        # очень медленно и последовательно
         "DOWNLOAD_DELAY": 15.0,
         "RANDOMIZE_DOWNLOAD_DELAY": True,
         "CONCURRENT_REQUESTS": 1,
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
 
-        # авто-троттлинг
         "AUTOTHROTTLE_ENABLED": True,
         "AUTOTHROTTLE_START_DELAY": 10.0,
         "AUTOTHROTTLE_MAX_DELAY": 30.0,
 
-        # чтобы IMDb реже капризничал
         "COOKIES_ENABLED": True,
         "DEFAULT_REQUEST_HEADERS": {
             "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -42,11 +39,10 @@ class ImdbRatingSpider(scrapy.Spider):
         "RETRY_TIMES": 2,
         "REDIRECT_ENABLED": True,
 
-        # выводим только нужные поля
         "FEED_EXPORT_FIELDS": ["imdb_id", "title", "imdb_rating"],
     }
 
-    max_movies = 3
+    max_movies = 10
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -85,7 +81,6 @@ class ImdbRatingSpider(scrapy.Spider):
                 yield response.follow(next_page, callback=self.parse_category)
 
     def parse_wikipedia_movie(self, response):
-        # FIX: достаём title надёжно (с fallback)
         title = self.extract_wiki_title(response)
 
         imdb_id = self.extract_imdb_id_from_wiki_html(response)
@@ -134,22 +129,18 @@ class ImdbRatingSpider(scrapy.Spider):
             "imdb_rating": rating,
         }
 
-    # ---------------- helpers ----------------
 
     def extract_wiki_title(self, response) -> str | None:
-        # новая разметка: <span class="mw-page-title-main">...</span>
         t = response.css("#firstHeading .mw-page-title-main::text").get()
         t = self.clean_text(t)
         if t:
             return t
 
-        # иногда текст прямо в #firstHeading
         t = response.css("#firstHeading::text").get()
         t = self.clean_text(t)
         if t:
             return t
 
-        # запасной вариант
         t = response.css("h1#firstHeading::text").get()
         return self.clean_text(t)
 
